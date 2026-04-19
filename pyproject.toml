@@ -1,0 +1,31 @@
+[project]
+name = "skills"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "pre-commit>=4.5.1",
+]
+
+[dependency-groups]
+test = [
+    "h5py==3.16.0",
+    "ijson==3.5.0",
+    "iniconfig==2.3.0",
+    "numpy==2.4.4",
+    "packaging==26.1",
+    "pandas==3.0.2",
+    "pluggy==1.6.0",
+    "pyarrow==23.0.1",
+    "pygments==2.20.0",
+    "pytest==9.0.3",
+    "python-dateutil==2.9.0.post0",
+    "six==1.17.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["inspect-data/scripts"]
+python_files = ["test_*.py"]
+addopts = "-q"
