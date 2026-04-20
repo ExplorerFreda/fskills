@@ -20,7 +20,7 @@ Parse the argument string:
 4. **Annotate the source with TODO notes.** For each identified content issue, insert a `\fredaauto{...}` comment at or just before the offending location in the `.tex` file (see "Inline annotations" below for setup). Keep the comment text short — one sentence stating the issue and the suggested fix.
 5. If additional instructions were provided in the argument, follow them after the review.
 6. **Verify citations.** If the project has any `.bib` file(s), run the reference checker from this skill's `scripts/` directory: `uv run <skill-dir>/scripts/check_reference.py <bib-path-or-project-dir>`. The script queries CrossRef, Semantic Scholar, and OpenAlex and emits a grouped report (`verified` / `suspicious` / `not_found` / `skipped`). Add its findings under the Citations category of the summary: cite `bibfile.bib:LINE` for each flagged entry and note the specific reason (author divergence, year mismatch, generic title, malformed DOI, etc.). Do not insert `\fredaauto{...}` annotations on `.bib` files — bib findings belong in the summary report only. If the script cannot reach the network (all three APIs fail), re-run with `--no-network` to still report local red flags, and explicitly note that the existence check was skipped.
-7. **Return the issue report (final step).** The skill must always end by returning a consolidated issue report to the user in the format described in "Output format" below, even if no issues were found (in which case, return an empty report with a one-line "no issues found" summary). This is the skill's primary deliverable — do not end the turn without it.
+7. **Save the issue report (final step).** The skill must always end by writing a consolidated issue report to `review-report.md` at the project root (the directory resolved in the argument-parsing step), in the format described in "Output format" below, even if no issues were found (in which case, write an empty report with a one-line "no issues found" summary). Overwrite any existing `review-report.md` at that path. After saving, point the user to the file. This is the skill's primary deliverable — do not end the turn without it.
 
 ## Inline annotations
 
@@ -122,7 +122,7 @@ Only flag issues you are confident about. If a rule has judgment-call edge cases
 
 ## Output format
 
-Present the review as a grouped list. For each finding:
+Write the review to `review-report.md` at the project root as a grouped list. For each finding:
 
 ```
 [category] file.tex:LINE — <issue>
