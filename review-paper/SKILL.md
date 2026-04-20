@@ -17,13 +17,13 @@ Parse the argument string:
    - A short description of the issue.
    - The suggested fix.
 3. **Group the findings** by category (Writing, Typesetting, Citations, Math, etc.) and present them to the user as a summary.
-4. **Annotate the source with TODO notes.** For each identified content issue, insert a `\freda{...}` comment at or just before the offending location in the `.tex` file (see "Inline annotations" below for setup). Keep the comment text short — one sentence stating the issue and the suggested fix.
+4. **Annotate the source with TODO notes.** For each identified content issue, insert a `\fredaauto{...}` comment at or just before the offending location in the `.tex` file (see "Inline annotations" below for setup). Keep the comment text short — one sentence stating the issue and the suggested fix.
 5. If additional instructions were provided in the argument, follow them after the review.
-6. **Verify citations (last step).** If the project has any `.bib` file(s), run the reference checker from this skill's `scripts/` directory: `uv run <skill-dir>/scripts/check_reference.py <bib-path-or-project-dir>`. The script queries CrossRef, Semantic Scholar, and OpenAlex and emits a grouped report (`verified` / `suspicious` / `not_found` / `skipped`). Add its findings under the Citations category of the summary: cite `bibfile.bib:LINE` for each flagged entry and note the specific reason (author divergence, year mismatch, generic title, malformed DOI, etc.). Do not insert `\freda{...}` annotations on `.bib` files — bib findings belong in the summary report only. If the script cannot reach the network (all three APIs fail), re-run with `--no-network` to still report local red flags, and explicitly note that the existence check was skipped.
+6. **Verify citations (last step).** If the project has any `.bib` file(s), run the reference checker from this skill's `scripts/` directory: `uv run <skill-dir>/scripts/check_reference.py <bib-path-or-project-dir>`. The script queries CrossRef, Semantic Scholar, and OpenAlex and emits a grouped report (`verified` / `suspicious` / `not_found` / `skipped`). Add its findings under the Citations category of the summary: cite `bibfile.bib:LINE` for each flagged entry and note the specific reason (author divergence, year mismatch, generic title, malformed DOI, etc.). Do not insert `\fredaauto{...}` annotations on `.bib` files — bib findings belong in the summary report only. If the script cannot reach the network (all three APIs fail), re-run with `--no-network` to still report local red flags, and explicitly note that the existence check was skipped.
 
 ## Inline annotations
 
-Annotations use the `todonotes` package. Before inserting any `\freda{...}` calls, verify the main file's preamble contains the required setup. If any of it is missing, add it to the preamble (right after other `\usepackage{...}` lines).
+Annotations use the `todonotes` package. Before inserting any `\fredaauto{...}` calls, verify the main file's preamble contains the required setup. If any of it is missing, add it to the preamble (right after other `\usepackage{...}` lines).
 
 Required preamble:
 
@@ -34,17 +34,18 @@ Required preamble:
 \usepackage{tcolorbox}
 \newcommand{\note}[4][]{\todo[author=#2,color=#3,size=\scriptsize,fancyline,caption={},#1]{#4}}
 \definecolor{tticblue}{RGB}{0, 94, 184}
-\newcommand{\freda}[2][]{\note[#1]{Freda}{tticblue!20}{#2}}
-\newcommand{\Freda}[2][]{\freda[inline,#1]{#2}\noindent}
+\newcommand{\fredaauto}[2][]{\note[#1]{Freda via Erich Review Bot}{tticblue!20}{#2}}
+\newcommand{\Fredaauto}[2][]{\fredaauto[inline,#1]{#2}\noindent}
 ```
 
 Rules for inserting annotations:
 
-- Always use the color `tticblue!20` (which `\freda{...}` already does — do not invent other colors).
-- Use `\freda{...}` for short margin notes. Use `\Freda{...}` for longer inline notes that would not fit in a margin.
+- Always use the color `tticblue!20` (which `\fredaauto{...}` already does — do not invent other colors).
+- Use `\fredaauto{...}` for short margin notes. Use `\Fredaauto{...}` for longer inline notes that would not fit in a margin.
 - Place the annotation directly before or inside the problem location so it renders near the issue. Do not reflow or otherwise edit the surrounding text.
-- Do not add `\freda{...}` for issues that cannot be localized to a specific line (e.g., overall structure comments) — leave those in the summary report only.
-- If a `\freda` / `\Freda` macro is already defined in the preamble with a different color or author, leave it alone and use it as-is.
+- Do not add `\fredaauto{...}` for issues that cannot be localized to a specific line (e.g., overall structure comments) — leave those in the summary report only.
+- Inside floating environments (`figure`, `table`, `figure*`, `table*`), annotations are allowed but must go *outside* `\caption{...}`. Use `\Fredaauto{...}` placed elsewhere in the float (e.g., just before `\caption{...}` or before `\end{figure}` / `\end{table}`) to flag caption-wording issues. Never insert `\fredaauto{...}` or `\Fredaauto{...}` inside the `\caption{...}` argument itself.
+- If a `\fredaauto` / `\Fredaauto` macro is already defined in the preamble with a different color or author, leave it alone and use it as-is.
 
 Only flag issues you are confident about. If a rule has judgment-call edge cases (e.g., tense, voice), note the ambiguity instead of insisting on one option.
 
@@ -130,7 +131,7 @@ End with a short summary: how many issues in each category, and a one-line overa
 
 ## Rules while reviewing
 
-- The only edits allowed are (a) inserting `\freda{...}` / `\Freda{...}` annotations at issue sites, and (b) adding the required `todonotes` preamble setup if missing. Do not reflow prose, rename macros, or "fix" anything else without explicit user permission.
+- The only edits allowed are (a) inserting `\fredaauto{...}` / `\Fredaauto{...}` annotations at issue sites, and (b) adding the required `todonotes` preamble setup if missing. Do not reflow prose, rename macros, or "fix" anything else without explicit user permission.
 - Do not commit anything.
 - If the paper uses a conference style file (e.g., `acl.sty`, `neurips.sty`) that overrides some of these defaults, defer to the conference style.
 - If a rule's application is ambiguous in context, note the ambiguity rather than forcing a fix.
