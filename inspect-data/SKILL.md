@@ -1,21 +1,26 @@
 ---
 name: inspect-data
-description: Inspect a data file (JSONL, JSON, Parquet, or HDF5) to understand its structure. Usage: /inspect-data <file_path> [additional instructions]
+description: Inspect a data file (JSONL, JSON, Parquet, or HDF5) or a HuggingFace dataset to understand its structure. Usage: /inspect-data <file_path_or_dataset_id> [additional instructions]
 ---
 
-Inspect a data file to understand its structure. The argument is a file path, optionally followed by additional instructions.
+Inspect a data file or a HuggingFace dataset to understand its structure. The argument is either a local file path or a HuggingFace dataset identifier, optionally followed by additional instructions.
 
-Parse the argument string: the first token is the file path; everything after is additional instructions (may be empty).
+Parse the argument string: the first token is the path or dataset id; everything after is additional instructions (may be empty).
 
-**Preliminary step — check file size:**
+**First — decide whether the target is a local file or a HuggingFace dataset:**
+- If the argument looks like a dataset id (no file extension and either (a) contains `/` like `allenai/c4`, or (b) is a bare name like `squad` that does not exist as a local path), treat it as a HuggingFace dataset and follow the HuggingFace section below.
+- Otherwise, treat it as a local file and follow the per-extension steps.
+
+**Preliminary step for local files — check file size:**
 Before inspecting, run `ls -l` on the file to get its size. If the file is **larger than 100 MB**, set a `large_file` flag and pass `--large` to the inspection script (which reads only a small sample instead of the full file).
 
 The inspection scripts live in `scripts/` next to this skill:
 - `scripts/json_inspector.py`
 - `scripts/parquet_inspector.py`
 - `scripts/hdf5_inspector.py`
+- `scripts/hf_inspector.py`
 
-Each script accepts `<path>` and an optional `--large` flag, and uses `uv`'s inline script metadata to pull its own dependencies. Run them with `uv run <script> <path> [--large]` (note: **no** `python` — inline metadata is only applied when the script itself is the entry point).
+Each script uses `uv`'s inline script metadata to pull its own dependencies. Run them with `uv run <script> ...` (note: **no** `python` — inline metadata is only applied when the script itself is the entry point).
 
 Steps based on file extension:
 
@@ -32,6 +37,15 @@ Run `uv run scripts/parquet_inspector.py <path> [--large]` and show the output. 
 
 **For `.h5` / `.hdf5` files:**
 Run `uv run scripts/hdf5_inspector.py <path> [--large]` and show the output. The script walks all groups and datasets, prints shapes/dtypes/attrs, and for each dataset previews the first item (or `[:3]` / `[0]` slice in `--large` mode). String values are truncated to 200 chars.
+
+**For HuggingFace datasets:**
+Run `uv run scripts/hf_inspector.py <dataset_id> [--config CONFIG] [--split SPLIT] [-n N]` and show the output. The script uses `load_dataset_builder` to read metadata without downloading (description, homepage, license, splits with example counts, feature schema) and then streams the first N examples (default 3) from the chosen split. It never downloads the full dataset, so the `--large` flag is not used.
+
+Guidance for HuggingFace inspection:
+- The `--large` flag does **not** apply here.
+- If the dataset has multiple configs, run the script first without `--config` to see the list, then re-run with one of them.
+- If the user didn't specify a split, let the script default (it prefers `train`, then `validation`, then `test`).
+- If streaming fails (some datasets don't support it), report the error to the user rather than retrying with a full download.
 
 After the inspection, summarize what you found in plain language (structure, field names, example values).
 
