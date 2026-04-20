@@ -47,6 +47,7 @@ Rules for inserting annotations:
 - Do not add `\fredaauto{...}` for issues that cannot be localized to a specific line (e.g., overall structure comments) — leave those in the summary report only.
 - Inside floating environments (`figure`, `table`, `figure*`, `table*`), annotations are allowed but must go *outside* `\caption{...}`. Use `\Fredaauto{...}` placed elsewhere in the float (e.g., just before `\caption{...}` or before `\end{figure}` / `\end{table}`) to flag caption-wording issues. Never insert `\fredaauto{...}` or `\Fredaauto{...}` inside the `\caption{...}` argument itself.
 - If a `\fredaauto` / `\Fredaauto` macro is already defined in the preamble with a different color or author, leave it alone and use it as-is.
+- **Verify compilation after each annotation.** After inserting each `\fredaauto{...}` or `\Fredaauto{...}` annotation (including the very first one, which also exercises any preamble additions), run `pdflatex -interaction=nonstopmode -halt-on-error <main.tex>` from the project root to confirm the document still compiles. If the compile fails, revert that specific annotation (and, for the first-insertion case, any preamble changes that caused the failure) so the file returns to its previous state, then skip that site. Record each skipped annotation in the final report under a **Skipped annotations** section with `file.tex:LINE`, the intended note text, and a one-line summary of the compile error. Do not proceed to further annotations until the file is back in a compiling state.
 
 Only flag issues you are confident about. If a rule has judgment-call edge cases (e.g., tense, voice), note the ambiguity instead of insisting on one option.
 
@@ -127,6 +128,8 @@ Present the review as a grouped list. For each finding:
 [category] file.tex:LINE — <issue>
   fix: <suggested replacement>
 ```
+
+If any annotations were reverted because `pdflatex` failed to compile (see "Verify compilation after each annotation"), include a **Skipped annotations** section listing each one with `file.tex:LINE`, the intended note text, and a brief compile-error summary.
 
 End with a short summary: how many issues in each category, and a one-line overall impression.
 
