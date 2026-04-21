@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>{{REPORT_TITLE}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #f5fbf7;
+      --card:        #ffffff;
+      --text:        #225573;
+      --text-light:  #4a7a94;
+      --accent:      #b6274e;
+      --green:       #547b5b;
+      --green-light: #6d8436;
+      --border:      #d5e3ec;
+      --border-light:#e8f0f5;
+      --tag-bg:      #eef5f0;
+      --shadow:      0 1px 3px rgba(34,85,115,.08), 0 4px 14px rgba(34,85,115,.05);
+      --shadow-lg:   0 2px 6px rgba(34,85,115,.10), 0 8px 24px rgba(34,85,115,.08);
+      --radius:      10px;
+      --max-w:       1440px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .page {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 32px 48px 64px;
+    }
+
+    /* Gradient header banner */
+    .header {
+      background: linear-gradient(135deg, #225573 0%, #1a6e5c 50%, #547b5b 100%);
+      color: #fff;
+      padding: 48px 56px;
+      border-radius: var(--radius);
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-lg);
+    }
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .header .meta {
+      font-size: 0.92rem;
+      opacity: 0.82;
+    }
+
+    /* Card sections */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      margin: 0 0 14px 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 50%;
+    }
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 18px 0 8px 0;
+      color: var(--text);
+    }
+
+    /* Summary & warning banners */
+    .summary {
+      background: linear-gradient(135deg, #eef5f0, #e8f3f9);
+      border-left: 4px solid var(--green);
+      padding: 20px 24px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 16px 0 20px;
+    }
+    .warning {
+      background: #fef8ee;
+      border-left: 4px solid #d4880f;
+      padding: 20px 24px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 16px 0 20px;
+    }
+
+    /* Tables with rounded borders */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 14px 0;
+      font-size: 0.88rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    th {
+      background: #f0f6f2;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.82rem;
+      color: var(--text-light);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fcfa; }
+    td.best { color: var(--accent); font-weight: 700; }
+    td.num, th.num-col { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Dark code blocks */
+    pre {
+      background: #1e2d3a;
+      color: #c8dce6;
+      padding: 18px 22px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    pre .comment { color: #5e8599; }
+    code {
+      background: var(--tag-bg);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.84em;
+      color: var(--green);
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    /* Links */
+    a {
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* Images */
+    img {
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1em 0;
+      box-shadow: var(--shadow);
+    }
+
+    /* Pill tag for model/category labels */
+    .mtag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      background: var(--tag-bg);
+      color: var(--green);
+      margin-right: 4px;
+    }
+    .mtag.rose   { background: #fae6ec; color: var(--accent); }
+    .mtag.teal   { background: #e2edf3; color: var(--text); }
+    .mtag.amber  { background: #fdf1dc; color: #a56a0b; }
+    .mtag.olive  { background: #eef2e1; color: var(--green-light); }
+    .mtag.gray   { background: #e8eef2; color: var(--text-light); }
+
+    /* Lists */
+    ul, ol { margin: 8px 0 8px 20px; padding: 0; }
+    li { margin: 4px 0; }
+
+    /* Paragraph spacing */
+    p { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- 1. Gradient header banner -->
+    <div class="header">
+      <h1>{{REPORT_TITLE}}</h1>
+      <div class="meta">{{REPORT_SUBTITLE}}</div>
+    </div>
+
+    <!-- 2. Key findings / TL;DR card -->
+    <div class="card">
+      <h2><span class="num">1</span> Key findings</h2>
+      <div class="summary">
+        <ul>
+          <li>{{FINDING_1}}</li>
+          <li>{{FINDING_2}}</li>
+          <li>{{FINDING_3}}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3. Numbered content cards -->
+    <div class="card">
+      <h2><span class="num">2</span> {{SECTION_2_TITLE}}</h2>
+      <p>{{SECTION_2_BODY}}</p>
+
+      <!-- Example table -->
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th class="num-col">Metric A</th>
+            <th class="num-col">Metric B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mtag teal">model-a</span></td>
+            <td class="num">0.00</td>
+            <td class="num best">0.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">3</span> {{SECTION_3_TITLE}}</h2>
+
+      <!-- Example image -->
+      <img src="plot.png" alt="{{PLOT_ALT}}">
+
+      <!-- Example warning banner -->
+      <div class="warning">
+        <strong>Caveat.</strong> {{WARNING_BODY}}
+      </div>
+
+      <!-- Example code block -->
+      <pre><code>{{CODE_SNIPPET}}</code></pre>
+    </div>
+
+  </div>
+</body>
+</html>
