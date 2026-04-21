@@ -25,7 +25,7 @@ Stop and ask the user if:
 
 2. **Inspect the results.** Use `/inspect-data` (the `inspect-data` skill) on the `--results` target to understand the structure. If `--results` is a directory, inspect the most informative file(s) in it (typical candidates: `results.jsonl`, `metrics.json`, `summary.csv`, `eval.parquet`) — if several look relevant, inspect each. Summarize the fields, row counts, and any categorical dimensions (model, dataset, split, seed, condition) internally so the report can group by them.
 
-3. **Identify image assets.** If the `--results` folder contains plots (`.png`, `.jpg`, `.svg`, `.pdf`), note their relative paths. Copy or symlink any images the report will display into `<folder>/` so that `<img src="foo.png">` works. Do not embed base64 — prefer sibling files.
+3. **Identify or generate image assets.** If the `--results` folder already contains plots (`.png`, `.jpg`, `.svg`, `.pdf`), note their relative paths and copy or symlink them into `<folder>/` so that `<img src="foo.png">` works. If the results are raw numbers with no plots, or the existing plots do not fit the story, **generate new plots** following the "Plot generation" section below. Do not embed base64 — prefer sibling files.
 
 4. **Draft the report.** Read `template.html` from this skill's directory and use it as the scaffold. Keep every CSS variable, font link, cache-control meta, and class name from the template — the design system is non-negotiable. Populate the template with:
    - A gradient header (`<div class="header">`) with the report title and a meta subtitle (date, dataset name, model, or other top-level identifier).
@@ -44,6 +44,48 @@ Stop and ask the user if:
    - A one-line invitation to request refinements.
 
 7. **Iterate on refinements.** When the user sends follow-up instructions ("add a latency table", "drop Section 3", "re-color the best column"), edit `<folder>/index.html` in place. Preserve the design system: do not change CSS variables, fonts, class names, or the overall card structure unless explicitly asked. Re-run step 6's summary after each edit so the user knows what changed.
+
+## Environment
+
+All Python execution for this skill — data loading, plot generation, anything — runs via `uv` with inline script metadata. No system Python, no activated venv, no `pip install`. The standard dependency set is:
+
+```python
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "matplotlib",
+#   "seaborn",
+#   "pandas",
+# ]
+# ///
+```
+
+(`json` is stdlib — do not list it.) Add further deps (e.g. `pyarrow` for Parquet, `numpy`) only when the data actually requires them.
+
+Invoke every script with `uv run <path-to-script>`. Never `python`, never `python3`.
+
+## Plot generation
+
+When plots are needed, write a one-off script in the output folder — e.g. `<out>/make_plots.py` — with the uv header above, generate the PNGs with `savefig`, then run it via `uv run <out>/make_plots.py`. The script **must**:
+
+1. Start with the uv inline metadata block from the Environment section.
+2. Load data from the `--results` path (JSON, JSONL, CSV, Parquet as appropriate).
+3. Apply the house plot style from `scripts/style.py` in this skill's directory. The simplest pattern:
+
+   ```python
+   import sys
+   sys.path.insert(0, "<absolute path to generate-report/scripts>")
+   from style import PALETTE, apply_style, CATEGORICAL
+   apply_style()
+   ```
+
+   `apply_style()` configures matplotlib + seaborn to match the HTML palette (teal axes, rose accents, Source Sans Pro font, no top/right spines, light grid). Use `PALETTE["primary"]`, `PALETTE["accent"]`, etc. when a specific color is needed; use `CATEGORICAL` as the per-series cycle.
+
+4. Save every figure into the `--out` folder with `fig.savefig("<out>/<name>.png")`. Filenames should match the `<img src="...">` references in `index.html`.
+
+Run the plot script once after writing it (`uv run <out>/make_plots.py`), confirm the PNGs exist, then reference them from `index.html` with relative paths. Keep the `make_plots.py` in the output folder so the user can re-run or tweak it themselves.
+
+For refinement iterations that change plots (new columns, different grouping, color swaps), edit `<out>/make_plots.py` and re-run with `uv run`. Do not hand-edit generated PNGs.
 
 ## Design system (baked into `template.html`)
 
@@ -99,7 +141,7 @@ gray/neutral      #7d99b1
 ## Rules while running
 
 - Never modify the `--results` source.
-- Never write outside the `--out` folder.
+- Never write outside the `--out` folder. The folder may contain `index.html`, generated PNGs, `make_plots.py`, and copied/symlinked assets — nothing else.
 - Do not invent numbers, model names, or claims not present in the results. If a field is missing, flag the gap in a `.warning` banner or leave the section out and note it in the summary.
 - Do not add JavaScript. The report is static HTML + CSS. (Exception: only if the user explicitly asks for interactivity.)
 - Do not commit anything.
