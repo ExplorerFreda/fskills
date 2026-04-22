@@ -25,7 +25,7 @@ Stop and ask the user if:
 
 2. **Inspect the results.** Use `/inspect-data` (the `inspect-data` skill) on the `--results` target to understand the structure. If `--results` is a directory, inspect the most informative file(s) in it (typical candidates: `results.jsonl`, `metrics.json`, `summary.csv`, `eval.parquet`) — if several look relevant, inspect each. Summarize the fields, row counts, and any categorical dimensions (model, dataset, split, seed, condition) internally so the report can group by them.
 
-3. **Identify or generate image assets.** If the `--results` folder already contains plots (`.png`, `.jpg`, `.svg`, `.pdf`), note their relative paths and copy or symlink them into `<folder>/` so that `<img src="foo.png">` works. If the results are raw numbers with no plots, or the existing plots do not fit the story, **generate new plots** following the "Plot generation" section below. Do not embed base64 — prefer sibling files.
+3. **Identify or generate image assets.** If the `--results` folder already contains plots (`.svg`, `.pdf`, `.png`, `.jpg`), note their relative paths and copy or symlink them into `<folder>/` so that `<img src="foo.svg">` works. If the results are raw numbers with no plots, or the existing plots do not fit the story, **generate new plots** following the "Plot generation" section below. Prefer vector output (`.svg`) for anything the skill generates. Do not embed base64 — prefer sibling files.
 
 4. **Draft the report.** Read `template.html` from this skill's directory and use it as the scaffold. Keep every CSS variable, font link, cache-control meta, and class name from the template — the design system is non-negotiable. Populate the template with:
    - A gradient header (`<div class="header">`) with the report title and a meta subtitle (date, dataset name, model, or other top-level identifier).
@@ -35,7 +35,7 @@ Stop and ask the user if:
    - A `.warning` banner for caveats (small sample sizes, known failures, incomplete runs).
    - `.mtag` pill badges for model / category labels where useful.
 
-5. **Write the report** to `<folder>/index.html`. Use relative paths (`./plot1.png`, not absolute) for every asset. Do not inline external CSS or JS beyond what `template.html` already specifies.
+5. **Write the report** to `<folder>/index.html`. Use relative paths (`./plot1.svg`, not absolute) for every asset. Do not inline external CSS or JS beyond what `template.html` already specifies.
 
 6. **Report back to the user.** Print a short summary:
    - Path to `index.html`.
@@ -66,26 +66,62 @@ Invoke every script with `uv run <path-to-script>`. Never `python`, never `pytho
 
 ## Plot generation
 
-When plots are needed, write a one-off script in the output folder — e.g. `<out>/make_plots.py` — with the uv header above, generate the PNGs with `savefig`, then run it via `uv run <out>/make_plots.py`. The script **must**:
+Plots are **SVG** (vector), saved as sibling files next to `index.html`, and embedded via `<img src="foo.svg">`. SVG scales cleanly at any zoom, renders crisply on HiDPI displays, and is usually smaller than a 160-dpi PNG for plot content. Raster output is only used when the user explicitly asks for it.
+
+When plots are needed, write a one-off script in the output folder — `<out>/make_plots.py` — with the uv header from the Environment section, generate SVGs, then run it via `uv run <out>/make_plots.py`. The script **must**:
 
 1. Start with the uv inline metadata block from the Environment section.
 2. Load data from the `--results` path (JSON, JSONL, CSV, Parquet as appropriate).
-3. Apply the house plot style from `scripts/style.py` in this skill's directory. The simplest pattern:
+3. Import the plot helpers from this skill's `scripts/` directory:
 
    ```python
    import sys
-   sys.path.insert(0, "<absolute path to generate-report/scripts>")
-   from style import PALETTE, apply_style, CATEGORICAL
-   apply_style()
+   sys.path.insert(0, '<absolute path to generate-report/scripts>')
+   from plots import bar, line, scatter, heatmap, save_svg, PALETTE, CATEGORICAL
    ```
 
-   `apply_style()` configures matplotlib + seaborn to match the HTML palette (teal axes, rose accents, Source Sans Pro font, no top/right spines, light grid). Use `PALETTE["primary"]`, `PALETTE["accent"]`, etc. when a specific color is needed; use `CATEGORICAL` as the per-series cycle.
+   Importing `plots` runs `apply_style()` automatically — the rest of the script gets teal/rose/green house palette, Palatino serif type, no top/right spines, and light grid with no further setup.
 
-4. Save every figure into the `--out` folder with `fig.savefig("<out>/<name>.png")`. Filenames should match the `<img src="...">` references in `index.html`.
+4. Build each figure with a helper (or matplotlib directly when a helper doesn't fit), then save with `save_svg(fig, '<out>/<name>.svg')`. The `<name>.svg` filename must match the `<img src="...">` reference in `index.html`.
 
-Run the plot script once after writing it (`uv run <out>/make_plots.py`), confirm the PNGs exist, then reference them from `index.html` with relative paths. Keep the `make_plots.py` in the output folder so the user can re-run or tweak it themselves.
+### Helpers available in `scripts/plots.py`
 
-For refinement iterations that change plots (new columns, different grouping, color swaps), edit `<out>/make_plots.py` and re-run with `uv run`. Do not hand-edit generated PNGs.
+All take a pandas `DataFrame` and return a `matplotlib.figure.Figure`. Pass `title=`, `xlabel=`, `ylabel=` where useful; omit to leave unset.
+
+- `bar(df, x=, y=, hue=None, err=None, orientation='v', ...)` — bar / grouped bar with optional error bars. `orientation='h'` for horizontal.
+- `line(df, x=, y=, hue=None, err=None, markers=False, ...)` — line plot; `err` shades a symmetric confidence band.
+- `scatter(df, x=, y=, hue=None, size=None, ...)` — scatter with optional color and size mapping.
+- `heatmap(matrix, row_labels=None, col_labels=None, annot=True, ...)` — accepts a 2D array or DataFrame. Default cmap is a teal→white→rose diverging map matching the house palette; pass `cmap=` to override.
+
+All helpers re-export `PALETTE` (dict of named colors) and `CATEGORICAL` (the ordered series color list) so ad-hoc code can match the style by hand.
+
+### Minimal `make_plots.py` example
+
+```python
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ['matplotlib', 'seaborn', 'pandas']
+# ///
+import sys
+import pandas as pd
+
+sys.path.insert(0, '<absolute path to generate-report/scripts>')
+from plots import bar, save_svg
+
+df = pd.read_json('../results/accuracy.jsonl', lines=True)
+fig = bar(df, x='model', y='accuracy', hue='dataset',
+          title='Accuracy by model and dataset',
+          ylabel='accuracy')
+save_svg(fig, 'accuracy.svg')
+```
+
+### Font note
+
+Plots use Palatino (serif), not the body font. Matplotlib tries `Palatino`, `Palatino Linotype`, `Book Antiqua`, and `URW Palladio L` in order; if none are installed on the host it falls back to the platform default serif. On Debian/Ubuntu, `URW Palladio L` ships with `texlive-fonts-recommended`. A missing Palatino is not a blocker — the fallback still looks reasonable and SVG text is rendered as outline paths, so the figure looks identical in every browser regardless of what fonts the viewer has.
+
+Run the plot script once after writing it (`uv run <out>/make_plots.py`), confirm the SVGs exist, then reference them from `index.html` with relative paths (`<img src="accuracy.svg">`). Keep `make_plots.py` in the output folder so the user can re-run or tweak it themselves.
+
+For refinement iterations that change plots (new columns, different grouping, color swaps), edit `<out>/make_plots.py` and re-run with `uv run`. Do not hand-edit generated SVGs.
 
 ## Design system (baked into `template.html`)
 
@@ -141,7 +177,8 @@ gray/neutral      #7d99b1
 ## Rules while running
 
 - Never modify the `--results` source.
-- Never write outside the `--out` folder. The folder may contain `index.html`, generated PNGs, `make_plots.py`, and copied/symlinked assets — nothing else.
+- Never write outside the `--out` folder. The folder may contain `index.html`, generated `.svg` plots, `make_plots.py`, and copied/symlinked assets — nothing else.
+- Generated plots must be `.svg` unless the user explicitly asks for a raster format.
 - Do not invent numbers, model names, or claims not present in the results. If a field is missing, flag the gap in a `.warning` banner or leave the section out and note it in the summary.
 - Do not add JavaScript. The report is static HTML + CSS. (Exception: only if the user explicitly asks for interactivity.)
 - Do not commit anything.

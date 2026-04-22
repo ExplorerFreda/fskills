@@ -8,8 +8,12 @@
 # ///
 """House plot style for generate-report.
 
+Plots use Palatino (serif) to match scientific-paper conventions and save
+as SVG so they embed crisply in HTML at any zoom. The HTML body font
+(Source Sans Pro) is separate — this module only configures matplotlib.
+
 Import from an ad-hoc plotting script, or run directly to emit a
-`style-preview.png` showing the palette.
+`style-preview.svg` showing the palette.
 
 Usage from a plot script (inside the report folder):
 
@@ -19,15 +23,21 @@ Usage from a plot script (inside the report folder):
     # ///
     import sys
     sys.path.insert(0, "<absolute path to generate-report/scripts>")
-    from style import PALETTE, apply_style
+    from style import PALETTE, apply_style, save_svg
     apply_style()
     ...
+    save_svg(fig, "out.svg")
 
 The palette mirrors the CSS variables in template.html so plots and
 HTML share the same visual language.
 """
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 PALETTE = {
     'primary':    '#225573',  # teal — primary text / headers
@@ -51,6 +61,20 @@ CATEGORICAL = [
     PALETTE['neutral'],
 ]
 
+# Palatino fallback chain. Exact Palatino ships with macOS and Windows;
+# on Linux the free URW Palladio L clone is installed by
+# texlive-fonts-recommended. If none resolve, matplotlib falls back to
+# DejaVu Serif via font.family='serif'. Do not put the generic 'serif'
+# in this list — it would be treated as a literal font name and spam
+# findfont warnings.
+SERIF_STACK = [
+    'Palatino',
+    'Palatino Linotype',
+    'Book Antiqua',
+    'URW Palladio L',
+    'DejaVu Serif',
+]
+
 
 def apply_style() -> None:
     """Set matplotlib + seaborn defaults to match the HTML theme."""
@@ -61,7 +85,8 @@ def apply_style() -> None:
     sns.set_palette(CATEGORICAL)
 
     mpl.rcParams.update({
-        'font.family':       ['Source Sans Pro', 'DejaVu Sans', 'sans-serif'],
+        'font.family':       'serif',
+        'font.serif':        SERIF_STACK,
         'font.size':         11,
         'axes.titlesize':    13,
         'axes.titleweight':  'bold',
@@ -77,14 +102,30 @@ def apply_style() -> None:
         'grid.linewidth':    0.8,
         'figure.facecolor':  'white',
         'axes.facecolor':    'white',
-        'savefig.dpi':       160,
+        # SVG output: render text as outline paths so the figure
+        # looks identical everywhere, regardless of viewer fonts.
+        'svg.fonttype':      'path',
+        'savefig.format':    'svg',
         'savefig.bbox':      'tight',
         'savefig.facecolor': 'white',
     })
 
 
+def save_svg(fig: Figure, path: str) -> None:
+    """Save ``fig`` as an SVG at ``path`` and close it.
+
+    Args:
+        fig: The matplotlib figure to save.
+        path: Destination file path (string or path-like).
+    """
+    import matplotlib.pyplot as plt
+
+    fig.savefig(str(path), format='svg', bbox_inches='tight')
+    plt.close(fig)
+
+
 def _preview() -> None:
-    """Emit style-preview.png showing the palette and a sample plot."""
+    """Emit style-preview.svg showing the palette and a sample plot."""
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -104,8 +145,8 @@ def _preview() -> None:
     ax2.legend(frameon=False)
 
     fig.tight_layout()
-    fig.savefig('style-preview.png')
-    print('wrote style-preview.png')
+    save_svg(fig, 'style-preview.svg')
+    print('wrote style-preview.svg')
 
 
 if __name__ == '__main__':
