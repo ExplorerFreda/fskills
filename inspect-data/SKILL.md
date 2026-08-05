@@ -1,6 +1,6 @@
 ---
 name: inspect-data
-description: Inspect a data file (JSONL, JSON, Parquet, or HDF5) or a HuggingFace dataset to understand its structure. Usage: /inspect-data <file_path_or_dataset_id> [additional instructions]
+description: Inspect a data file (JSONL, JSON, Parquet, HDF5, or NetCDF) or a HuggingFace dataset to understand its structure. Usage: /inspect-data <file_path_or_dataset_id> [additional instructions]
 ---
 
 Inspect a data file or a HuggingFace dataset to understand its structure. The argument is either a local file path or a HuggingFace dataset identifier, optionally followed by additional instructions.
@@ -18,6 +18,7 @@ The inspection scripts live in `scripts/` next to this skill:
 - `scripts/json_inspector.py`
 - `scripts/parquet_inspector.py`
 - `scripts/hdf5_inspector.py`
+- `scripts/nc_inspector.py`
 - `scripts/hf_inspector.py`
 
 Each script uses `uv`'s inline script metadata to pull its own dependencies. Run them with `uv run <script> ...` (note: **no** `python` — inline metadata is only applied when the script itself is the entry point).
@@ -37,6 +38,9 @@ Run `uv run scripts/parquet_inspector.py <path> [--large]` and show the output. 
 
 **For `.h5` / `.hdf5` files:**
 Run `uv run scripts/hdf5_inspector.py <path> [--large]` and show the output. The script walks all groups and datasets, prints shapes/dtypes/attrs, and for each dataset previews the first item (or `[:3]` / `[0]` slice in `--large` mode). String values are truncated to 200 chars.
+
+**For `.nc` / `.nc4` / `.netcdf` files:**
+Run `uv run scripts/nc_inspector.py <path> [--large]` and show the output. The script prints dimensions, coordinate ranges (with step size), per-variable metadata (units, long_name) and statistics. In normal mode it computes full min/max/mean/NaN count over the entire variable. In `--large` mode it opens the file lazily and computes stats over a single time-step slice only (labeled `sample (t=0)`), keeping memory usage low for files that can exceed hundreds of MB.
 
 **For HuggingFace datasets:**
 Run `uv run scripts/hf_inspector.py <dataset_id> [--config CONFIG] [--split SPLIT] [-n N]` and show the output. The script uses `load_dataset_builder` to read metadata without downloading (description, homepage, license, splits with example counts, feature schema) and then streams the first N examples (default 3) from the chosen split. It never downloads the full dataset, so the `--large` flag is not used.
